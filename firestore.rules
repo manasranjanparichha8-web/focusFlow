@@ -1,0 +1,99 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Phase 3: Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Phase 4: Entity Validations
+    function isValidTask(data) {
+      return data.userId is string && data.userId == request.auth.uid
+          && data.title is string && data.title.size() <= 500
+          && data.type in ['lecture', 'practice', 'revision']
+          && data.status in ['active', 'completed', 'interrupted', 'paused']
+          && data.startTime is string
+          && (data.get('endTime', '') is string)
+          && (data.get('updatedAt', '') is string)
+          && (data.get('description', '') is string && data.get('description', '').size() <= 5000)
+          && (data.get('engagementScore', 0) is number)
+          && (data.get('feedback', '') is string && data.get('feedback', '').size() <= 2000)
+          && (data.get('isMeaningful', false) is bool)
+          && (data.get('lectureUrl', '') is string && data.get('lectureUrl', '').size() <= 1000)
+          && (data.get('pauseCount', 0) is number)
+          && (data.get('durationMins', 0) is number)
+          && (data.get('revisionStatus', 'none') is string)
+          && (data.get('notes', '') is string && data.get('notes', '').size() <= 10000)
+          && (data.get('practiceQuestions', []) is list)
+          && (data.get('practiceResult', {}) is map)
+          && (data.get('createdAt', request.time) != null);
+    }
+
+    function isValidUserStats(data) {
+      return data.userId is string && data.userId == request.auth.uid
+          && data.date is string && data.date.size() <= 10
+          && data.totalMinutes is number
+          && data.meaningfulMinutes is number
+          && data.efficiency is number;
+    }
+
+    // Collection: Tasks
+    match /tasks/{taskId} {
+      allow get: if isOwner(existing().userId);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      
+      allow create: if isSignedIn() 
+          && isValidId(taskId)
+          && isValidTask(incoming())
+          && incoming().keys().hasAll(['userId', 'title', 'type', 'status', 'startTime'])
+          && incoming().keys().size() <= 20;
+
+      allow update: if isOwner(existing().userId)
+          && isValidTask(incoming())
+          && (
+            // Action: Update Progress or Meta
+            incoming().diff(existing()).affectedKeys().hasAny(['status', 'endTime', 'engagementScore', 'feedback', 'isMeaningful', 'description', 'pauseCount', 'durationMins', 'revisionStatus', 'notes', 'practiceQuestions', 'practiceResult', 'updatedAt', 'title', 'type', 'lectureUrl'])
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'endTime', 'engagementScore', 'feedback', 'isMeaningful', 'description', 'pauseCount', 'durationMins', 'revisionStatus', 'notes', 'practiceQuestions', 'practiceResult', 'updatedAt', 'title', 'type', 'lectureUrl'])
+          );
+      
+      allow delete: if isOwner(existing().userId);
+    }
+
+    // Collection: UserStats
+    match /userStats/{statId} {
+      allow get: if isOwner(existing().userId);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      
+      allow create: if isSignedIn()
+          && isValidId(statId)
+          && isValidUserStats(incoming())
+          && incoming().keys().hasAll(['userId', 'date', 'totalMinutes', 'meaningfulMinutes', 'efficiency'])
+          && incoming().keys().size() <= 5;
+
+      allow update: if isOwner(existing().userId)
+          && isValidUserStats(incoming())
+          && incoming().diff(existing()).affectedKeys().hasOnly(['totalMinutes', 'meaningfulMinutes', 'efficiency']);
+    }
+  }
+}

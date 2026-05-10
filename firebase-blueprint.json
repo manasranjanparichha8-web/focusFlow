@@ -1,0 +1,51 @@
+{
+  "entities": {
+    "Task": {
+      "title": "Study Task",
+      "description": "A study session activity log.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "type": { "type": "string", "enum": ["lecture", "problem-solving", "reading", "review", "other"] },
+        "status": { "type": "string", "enum": ["active", "completed", "interrupted"] },
+        "startTime": { "type": "string", "format": "date-time" },
+        "endTime": { "type": "string", "format": "date-time" },
+        "engagementScore": { "type": "number" },
+        "feedback": { "type": "string" },
+        "isMeaningful": { "type": "boolean" },
+        "lectureUrl": { "type": "string" },
+        "practiceQuestions": { "type": "array" },
+        "practiceResult": { "type": "object" },
+        "pauseCount": { "type": "number" },
+        "revisionStatus": { "type": "string" },
+        "notes": { "type": "string" }
+      },
+      "required": ["userId", "title", "type", "status", "startTime"]
+    },
+    "UserStats": {
+      "title": "User Statistics",
+      "description": "Aggregated productivity metrics for a user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "totalMinutes": { "type": "number" },
+        "meaningfulMinutes": { "type": "number" },
+        "efficiency": { "type": "number" }
+      },
+      "required": ["userId", "date"]
+    }
+  },
+  "firestore": {
+    "/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "Individual study sessions."
+    },
+    "/userStats/{statId}": {
+      "schema": "UserStats",
+      "description": "Daily aggregated stats."
+    }
+  }
+}

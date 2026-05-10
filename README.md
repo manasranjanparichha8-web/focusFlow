@@ -1,2 +1,20 @@
-# focusFlow
-Many students experience a gap between the time they spend studying and the actual outcomes they achieve. They often engage in activities like watching lectures or organizing notes, which create a false sense of productivity. This results in reduced efficiency and poor academic performance.
+<div align="center">
+<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+</div>
+
+# Run and deploy your AI Studio app
+
+This contains everything you need to run your app locally.
+
+View your app in AI Studio: https://ai.studio/apps/11e967c9-c476-4a74-958b-f3703759e0d3
+
+## Run Locally
+
+**Prerequisites:**  Node.js
+
+
+1. Install dependencies:
+   `npm install`
+2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+3. Run the app:
+   `npm run dev`
